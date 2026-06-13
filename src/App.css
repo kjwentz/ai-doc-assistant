@@ -11,19 +11,19 @@ body {
 }
 
 .app {
-  width: min(900px, 92vw);
   margin: 0 auto;
   padding: 48px 0;
 }
 
 .hero {
   margin-bottom: 32px;
+  display: inline-block;
 }
 
 .eyebrow {
   margin: 0 0 8px;
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 800;
   color: #4f46e5;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -31,18 +31,33 @@ body {
 
 h1 {
   margin: 0;
-  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-size: clamp(2rem, 5vw, 3.4rem);
   line-height: 1.05;
   color: black;
 }
 
+h2 {
+  margin-top: 0;
+  color: #4f46e5;
+}
+
 .subtitle {
+  max-width: 760px;
   color: #6b7280;
   font-size: 1.05rem;
   line-height: 1.6;
-  padding-top: 16px;
+  display: inline-block;
+  padding-top: 25px;
 }
 
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.sidebar,
 .card,
 .result {
   background: white;
@@ -50,6 +65,37 @@ h1 {
   border-radius: 18px;
   padding: 24px;
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.06);
+}
+
+.sidebar {
+  position: sticky;
+  top: 24px;
+  margin-left: auto;
+}
+
+.document-list {
+  display: grid;
+  gap: 10px;
+}
+
+.document-button {
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #374151;
+}
+
+.document-button.active {
+  background: #eef2ff;
+  border-color: #4f46e5;
+  color: #312e81;
+}
+
+.main-panel {
+  display: grid;
+  gap: 24px;
+  padding-right: 35px;
 }
 
 label {
@@ -72,7 +118,7 @@ input {
 }
 
 textarea {
-  min-height: 260px;
+  min-height: 220px;
   resize: vertical;
 }
 
@@ -81,10 +127,10 @@ input {
 }
 
 button {
-  margin-top: 20px;
+  margin-top: 16px;
   border: none;
   border-radius: 12px;
-  padding: 14px 20px;
+  padding: 12px 16px;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -97,11 +143,31 @@ button:disabled {
   opacity: 0.6;
 }
 
-.result {
-  margin-top: 24px;
+.danger-button {
+  background: #dc2626;
+  margin-top: 0;
 }
 
-.result h2 {
+.document-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.document-preview {
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.result {
   margin-top: 0;
 }
 
@@ -111,6 +177,47 @@ button:disabled {
 }
 
 .error {
+  margin-bottom: 24px;
   border-color: #fecaca;
   color: #991b1b;
+}
+
+.history-list {
+  display: grid;
+  gap: 16px;
+}
+
+.history-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+  background: #f9fafb;
+}
+
+.history-question {
+  font-weight: 800;
+  color: #111827;
+}
+
+.meta {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+blockquote {
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  border-left: 4px solid #4f46e5;
+  background: white;
+  color: #4b5563;
+}
+
+@media (max-width: 850px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+  }
 }

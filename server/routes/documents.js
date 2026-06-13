@@ -1,5 +1,5 @@
 import express from "express";
-import { documents, questions } from "../data/mockDb.js";
+import { documents, questions } from "../data/mockDatabase.js";
 import { generateAnswer } from "../services/aiService.js";
 
 const router = express.Router();
