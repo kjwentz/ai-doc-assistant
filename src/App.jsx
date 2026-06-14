@@ -16,6 +16,10 @@ function App() {
   const [isAsking, setIsAsking] = useState(false);
   const [error, setError] = useState("");
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+
   const selectedDocument = documents.find((doc) => doc.id === selectedDocumentId);
 
   useEffect(() => {
@@ -136,6 +140,11 @@ function App() {
 
   async function handleAskQuestion(event) {
     event.preventDefault();
+    
+    if (isEditing) {
+      setError("Save or cancel your edits before asking a question.");
+      return;
+    }
 
     if (!selectedDocumentId || !question) {
       setError("Select a document and enter a question.");
@@ -171,6 +180,57 @@ function App() {
       setError(err.message);
     } finally {
       setIsAsking(false);
+    }
+  }
+
+  function startEditingDocument() {
+    if (!selectedDocument) return;
+
+    setIsEditing(true);
+    setEditTitle(selectedDocument.title);
+    setEditContent(selectedDocument.content);
+  }
+
+  async function handleUpdateDocument(event) {
+    event.preventDefault();
+
+    if (!selectedDocumentId || !editTitle || !editContent) {
+      setError("Title and content are required.");
+      return;
+    }
+
+    setError("");
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/documents/${selectedDocumentId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: editTitle,
+            content: editContent,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update document.");
+      }
+
+      setDocuments((prevDocuments) =>
+        prevDocuments.map((doc) =>
+          doc.id === data.document.id ? data.document : doc
+        )
+      );
+
+      setIsEditing(false);
+    } catch (err) {
+      setError(err.message);
     }
   }
 
@@ -252,26 +312,73 @@ function App() {
                   <h2>{selectedDocument.title}</h2>
                 </div>
 
-                <button
-                  className="danger-button"
-                  onClick={() => handleDeleteDocument(selectedDocument.id)}
-                >
-                  Delete
-                </button>
+                <div className="document-actions">
+                  <button type="button" onClick={startEditingDocument}>
+                    Edit
+                  </button>
+
+                  <button
+                    type="button"
+                    className="danger-button"
+                    onClick={() => handleDeleteDocument(selectedDocument.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
 
-              <p className="document-preview">{selectedDocument.content}</p>
+              {isEditing ? (
+                <form onSubmit={handleUpdateDocument}>
+                  <label htmlFor="editTitle">Edit title</label>
+                  <input
+                    id="editTitle"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                  />
 
+                  <label htmlFor="editContent">Edit content</label>
+                  <textarea
+                    id="editContent"
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                  />
+
+                  <div className="document-actions">
+                    <button type="submit">Save Changes</button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => setIsEditing(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <p className="document-preview">{selectedDocument.content}</p>
+              )}
+
+              {isEditing && (
+                <p className="helper-text">
+                  Save or cancel your edits before asking questions about this
+                  document.
+                </p>
+              )}
               <form onSubmit={handleAskQuestion}>
                 <label htmlFor="question">Ask a question</label>
                 <input
                   id="question"
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="Example: How do I run this project locally?"
+                  placeholder={
+                    isEditing
+                      ? "Finish editing before asking a question"
+                      : "Example: How do I run this project locally?"
+                  }
+                  disabled={isEditing}
                 />
 
-                <button type="submit" disabled={isAsking}>
+                <button type="submit" disabled={isAsking || isEditing}>
                   {isAsking ? "Thinking..." : "Ask"}
                 </button>
               </form>

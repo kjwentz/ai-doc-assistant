@@ -1,144 +1,281 @@
 import express from "express";
-import { documents, questions } from "../data/mockDatabase.js";
+import { prisma } from "../prismaClient.js";
 import { generateAnswer } from "../services/aiService.js";
 
 const router = express.Router();
 
-function createId(prefix) {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
 // GET /api/documents
-router.get("/", (req, res) => {
-  res.json({
-    documents: documents.map((doc) => ({
-      id: doc.id,
-      title: doc.title,
-      content: doc.content,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-    })),
-  });
+router.get("/", async (req, res) => {
+  try {
+    const documents = await prisma.document.findMany({
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    res.json({
+      documents,
+    });
+  } catch (error) {
+    console.error("Failed to fetch documents:", error);
+    res.status(500).json({
+      error: "Failed to fetch documents.",
+    });
+  }
 });
 
 // POST /api/documents
-router.post("/", (req, res) => {
-  const { title, content } = req.body;
+router.post("/", async (req, res) => {
+  try {
+    const { title, content } = req.body;
 
-  if (!title || !content) {
-    return res.status(400).json({
-      error: "Title and content are required.",
+    if (!title || !content) {
+      return res.status(400).json({
+        error: "Title and content are required.",
+      });
+    }
+
+    const document = await prisma.document.create({
+      data: {
+        title,
+        content,
+      },
+    });
+
+    res.status(201).json({
+      document,
+    });
+  } catch (error) {
+    console.error("Failed to create document:", error);
+    res.status(500).json({
+      error: "Failed to create document.",
     });
   }
-
-  const now = new Date().toISOString();
-
-  const newDocument = {
-    id: createId("doc"),
-    title,
-    content,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  documents.unshift(newDocument);
-
-  res.status(201).json({
-    document: newDocument,
-  });
 });
 
 // GET /api/documents/:id
-router.get("/:id", (req, res) => {
-  const document = documents.find((doc) => doc.id === req.params.id);
+router.get("/:id", async (req, res) => {
+  try {
+    const document = await prisma.document.findUnique({
+      where: {
+        id: req.params.id,
+      },
+    });
 
-  if (!document) {
-    return res.status(404).json({
-      error: "Document not found.",
+    if (!document) {
+      return res.status(404).json({
+        error: "Document not found.",
+      });
+    }
+
+    res.json({
+      document,
+    });
+  } catch (error) {
+    console.error("Failed to fetch document:", error);
+    res.status(500).json({
+      error: "Failed to fetch document.",
     });
   }
+});
 
-  res.json({
-    document,
-  });
+// PUT /api/documents/:id
+router.put("/:id", async (req, res) => {
+  try {
+    const { title, content } = req.body;
+
+    if (!title || !content) {
+      return res.status(400).json({
+        error: "Title and content are required.",
+      });
+    }
+
+    const existingDocument = await prisma.document.findUnique({
+      where: {
+        id: req.params.id,
+      },
+    });
+
+    if (!existingDocument) {
+      return res.status(404).json({
+        error: "Document not found.",
+      });
+    }
+
+    const updatedDocument = await prisma.document.update({
+      where: {
+        id: req.params.id,
+      },
+      data: {
+        title,
+        content,
+      },
+    });
+
+    res.json({
+      document: updatedDocument,
+    });
+  } catch (error) {
+    console.error("Failed to update document:", error);
+    res.status(500).json({
+      error: "Failed to update document.",
+    });
+  }
+});
+
+// PUT /api/documents/:id
+router.put("/:id", async (req, res) => {
+  try {
+    const { title, content } = req.body;
+
+    if (!title || !content) {
+      return res.status(400).json({
+        error: "Title and content are required.",
+      });
+    }
+
+    const existingDocument = await prisma.document.findUnique({
+      where: {
+        id: req.params.id,
+      },
+    });
+
+    if (!existingDocument) {
+      return res.status(404).json({
+        error: "Document not found.",
+      });
+    }
+
+    const updatedDocument = await prisma.document.update({
+      where: {
+        id: req.params.id,
+      },
+      data: {
+        title,
+        content,
+      },
+    });
+
+    res.json({
+      document: updatedDocument,
+    });
+  } catch (error) {
+    console.error("Failed to update document:", error);
+    res.status(500).json({
+      error: "Failed to update document.",
+    });
+  }
 });
 
 // DELETE /api/documents/:id
-router.delete("/:id", (req, res) => {
-  const documentIndex = documents.findIndex((doc) => doc.id === req.params.id);
+router.delete("/:id", async (req, res) => {
+  try {
+    const document = await prisma.document.findUnique({
+      where: {
+        id: req.params.id,
+      },
+    });
 
-  if (documentIndex === -1) {
-    return res.status(404).json({
-      error: "Document not found.",
+    if (!document) {
+      return res.status(404).json({
+        error: "Document not found.",
+      });
+    }
+
+    await prisma.document.delete({
+      where: {
+        id: req.params.id,
+      },
+    });
+
+    res.status(204).send();
+  } catch (error) {
+    console.error("Failed to delete document:", error);
+    res.status(500).json({
+      error: "Failed to delete document.",
     });
   }
-
-  documents.splice(documentIndex, 1);
-
-  // Remove related question history too
-  for (let i = questions.length - 1; i >= 0; i--) {
-    if (questions[i].documentId === req.params.id) {
-      questions.splice(i, 1);
-    }
-  }
-
-  res.status(204).send();
 });
 
 // POST /api/documents/:id/ask
 router.post("/:id/ask", async (req, res) => {
-  const { question } = req.body;
+  try {
+    const { question } = req.body;
 
-  if (!question) {
-    return res.status(400).json({
-      error: "Question is required.",
+    if (!question) {
+      return res.status(400).json({
+        error: "Question is required.",
+      });
+    }
+
+    const document = await prisma.document.findUnique({
+      where: {
+        id: req.params.id,
+      },
+    });
+
+    if (!document) {
+      return res.status(404).json({
+        error: "Document not found.",
+      });
+    }
+
+    const aiResult = await generateAnswer(document.content, question);
+
+    const questionRecord = await prisma.question.create({
+      data: {
+        documentId: document.id,
+        question,
+        answer: aiResult.answer,
+        confidence: aiResult.confidence,
+        sourceExcerpt: aiResult.sourceExcerpt,
+      },
+    });
+
+    res.status(201).json({
+      result: questionRecord,
+    });
+  } catch (error) {
+    console.error("Failed to ask question:", error);
+    res.status(500).json({
+      error: "Failed to ask question.",
     });
   }
-
-  const document = documents.find((doc) => doc.id === req.params.id);
-
-  if (!document) {
-    return res.status(404).json({
-      error: "Document not found.",
-    });
-  }
-
-  const aiResult = await generateAnswer(document.content, question);
-
-  const questionRecord = {
-    id: createId("q"),
-    documentId: document.id,
-    question,
-    answer: aiResult.answer,
-    confidence: aiResult.confidence,
-    sourceExcerpt: aiResult.sourceExcerpt,
-    createdAt: new Date().toISOString(),
-  };
-
-  questions.unshift(questionRecord);
-
-  res.status(201).json({
-    result: questionRecord,
-  });
 });
 
 // GET /api/documents/:id/questions
-router.get("/:id/questions", (req, res) => {
-  const document = documents.find((doc) => doc.id === req.params.id);
+router.get("/:id/questions", async (req, res) => {
+  try {
+    const document = await prisma.document.findUnique({
+      where: {
+        id: req.params.id,
+      },
+    });
 
-  if (!document) {
-    return res.status(404).json({
-      error: "Document not found.",
+    if (!document) {
+      return res.status(404).json({
+        error: "Document not found.",
+      });
+    }
+
+    const questions = await prisma.question.findMany({
+      where: {
+        documentId: req.params.id,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    res.json({
+      questions,
+    });
+  } catch (error) {
+    console.error("Failed to fetch question history:", error);
+    res.status(500).json({
+      error: "Failed to fetch question history.",
     });
   }
-
-  const documentQuestions = questions.filter(
-    (question) => question.documentId === req.params.id
-  );
-
-  res.json({
-    questions: documentQuestions,
-  });
 });
 
 export default router;
